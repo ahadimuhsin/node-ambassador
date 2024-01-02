@@ -5,8 +5,8 @@ services:
       - "8888:8000"
     volumes:
       - .:/app
-    depends_on:
-      - db
+    # depends_on:
+    #   - db
   
   db:
     image: mysql:8
