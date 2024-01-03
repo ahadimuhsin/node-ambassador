@@ -50,6 +50,7 @@ export class Order {
     @OneToMany(() => OrderItem, orderItem => orderItem.order)
     order_items: OrderItem[]
 
+    // membuat relasi tanpa foreign key yang dihubungkan dengan kolom code
     @ManyToOne(() => Link, link => link.orders, {
         createForeignKeyConstraints: false
     })
