@@ -11,7 +11,7 @@ createConnection().then(async() => {
         await repository.save({
             title: faker.lorem.words(2),
             description: faker.lorem.words(10),
-            image: faker.image.imageUrl(200,300, '', true),
+            image: faker.image.url(),
             price: randomInt(100, 10000000)
         })
     }

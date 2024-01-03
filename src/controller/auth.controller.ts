@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { getRepository } from "typeorm";
 import { User } from "../entity/user.entity";
 import bcryptjs from 'bcryptjs'
-import { sign, verify } from "jsonwebtoken";
+import { sign } from "jsonwebtoken";
 
 export const Register = async (req: Request, res: Response) => {
     const {password, password_confirm, ...body} = req.body;
