@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authMiddleware } from "../middleware/auth.middleware";
 import { Ambassadors } from "../controller/user.controller";
 import { Login, Register, AuthenticatedUser, Logout, UpdateInfo, UpdatePassword } from "../controller/auth.controller";
+import { ProductsFrontend } from "../controller/product.controller";
 
 export const ambassadorRoutes = (router: Router) =>  {
 
@@ -15,4 +16,7 @@ export const ambassadorRoutes = (router: Router) =>  {
     router.post('/api/ambassador/logout', authMiddleware, Logout);
     router.put('/api/ambassador/users/info', authMiddleware, UpdateInfo);
     router.put('/api/ambassador/users/password', authMiddleware, UpdatePassword);
+
+    // for product
+    router.get('/api/ambassador/products/frontend', ProductsFrontend)
 }
