@@ -73,4 +73,9 @@ export class Order {
     get total(): number{
         return this.order_items.reduce((sum, item) => sum + item.admin_revenue, 0)
     }
+
+    // total of ambassador revenue
+    get ambassador_revenue(): number{
+        return this.order_items.reduce((sum, item) => sum + item.ambassador_revenue, 0)
+    }
 }

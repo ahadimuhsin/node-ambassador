@@ -3,6 +3,7 @@ import { getRepository } from "typeorm";
 import { User } from "../entity/user.entity";
 import bcryptjs from 'bcryptjs'
 import { sign } from "jsonwebtoken";
+import { Order } from "../entity/order.entity";
 
 export const Register = async (req: Request, res: Response) => {
     const {password, password_confirm, ...body} = req.body;
@@ -19,7 +20,7 @@ export const Register = async (req: Request, res: Response) => {
             first_name: body.first_name,
             last_name: body.last_name,
             email: body.email,
-            is_ambassador: body.is_ambassador,
+            is_ambassador: req.path === '/api/ambassador/register',
             password: await bcryptjs.hash(password, 10),
         });
 
@@ -43,7 +44,7 @@ export const Login = async (req: Request, res: Response) => {
     const user = await getRepository(User).findOne({
         email: req.body.email
     }, {
-        select: ["password", "id"]
+        select: ["password", "id", "is_ambassador"]
     });
 
     if(!user)
@@ -56,6 +57,8 @@ export const Login = async (req: Request, res: Response) => {
     // compare password
     const compare = await bcryptjs.compare(req.body.password, user.password);
 
+    const adminLogin = req.path === '/api/admin/login';
+
     if(!compare)
     {
         return res.status(400).send({
@@ -63,11 +66,20 @@ export const Login = async (req: Request, res: Response) => {
         });
     }
 
+    //restrict ambassador to login from admin route
+    if(user.is_ambassador && adminLogin)
+    {
+        return res.status(401).send({
+            message: "Unauthorized"
+        });
+    }
+
     const token = sign({
         id: user.id,
         user : user.first_name + user.last_name,
         email: user.email,
-        is_ambassador: user.is_ambassador
+        is_ambassador: user.is_ambassador,
+        scope: adminLogin ? "admin" : "ambassador"
     }, process.env.SECRET_KEY);
 
     //create cookie
@@ -77,12 +89,31 @@ export const Login = async (req: Request, res: Response) => {
     })
 
     res.send({
-        message: "Login Succes",
+        message: "Login Success",
     });
 }
 
 export const AuthenticatedUser = async (req: Request, res: Response) => {
-    res.send(req["user"]);    
+    const user = req['user'];
+
+    //cek apakah request berasal dari admin atau ambassador
+    if(req.path === '/api/admin/user')
+    {
+        return res.send(user)
+    }
+    
+    //kalau dari ambassador, dapatkan juga info ambassador_revenuenya
+    const orders = await getRepository(Order).find({
+        where: {
+            user_id: user.id,
+            complete: true 
+        },
+        relations: ['order_items']
+    });
+
+    user.revenue = orders.reduce((s, o) => s + o.ambassador_revenue, 0)
+
+    res.send(user)
 }
 
 export const Logout = async(req: Request, res: Response) => {
