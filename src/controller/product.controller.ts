@@ -76,3 +76,27 @@ export const ProductsFrontend = async(req: Request, res: Response) => {
     
     res.send(products);
 }
+
+export const ProductBackend = async(req: Request, res: Response) => {
+    //cek apakah ada cache di redis
+    let products: Product[] = JSON.parse(await client.get('products_backend'))
+
+    //kalo tidak ada, ambil
+    if(!products)
+    {
+        products = await getRepository(Product).find();
+
+        await client.set('products_backend', JSON.stringify(products), {
+            EX: 1800, //30 menit
+        });
+    }
+
+    if(req.query.s)
+    {
+        // searching
+        const s = req.query.s.toString().toLowerCase();
+        products = products.filter((p) => p.title.indexOf(s) >= 0 || p.description.indexOf(s) >= 0)
+    }
+    
+    res.send(products);
+}

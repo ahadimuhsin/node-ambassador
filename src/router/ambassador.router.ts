@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authMiddleware } from "../middleware/auth.middleware";
 import { Ambassadors } from "../controller/user.controller";
 import { Login, Register, AuthenticatedUser, Logout, UpdateInfo, UpdatePassword } from "../controller/auth.controller";
-import { ProductsFrontend } from "../controller/product.controller";
+import { ProductBackend, ProductsFrontend } from "../controller/product.controller";
 
 export const ambassadorRoutes = (router: Router) =>  {
 
@@ -19,4 +19,5 @@ export const ambassadorRoutes = (router: Router) =>  {
 
     // for product
     router.get('/api/ambassador/products/frontend', ProductsFrontend)
+    router.get('/api/ambassador/products/backend', ProductBackend)
 }
