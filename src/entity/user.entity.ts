@@ -22,4 +22,9 @@ export class User{
 
     @Column()
     is_ambassador: boolean;
+
+    //get full name
+    get fullName():string{
+        return this.first_name + ' ' + this.last_name
+    }
 }
