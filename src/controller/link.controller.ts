@@ -44,3 +44,12 @@ export const Stats = async(req: Request, res: Response) => {
         }
     }))
 }
+
+export const GetLink = async(req: Request, res: Response) => {
+    res.send(await getRepository(Link).findOne({
+        where:{
+            code: req.params.code
+        },
+        relations: ['user', 'products']
+    }));
+}

@@ -4,6 +4,7 @@ import { adminRoutes } from "./router/admin.router";
 import { productRoutes } from "./router/product.router";
 import { linkRoutes } from "./router/link.router";
 import { orderRoutes } from "./router/order.router";
+import { checkoutRoutes } from "./router/checkout.router";
 
 export const routes = (router: Router) => {
     // admin route
@@ -20,4 +21,7 @@ export const routes = (router: Router) => {
 
     // Orders
     orderRoutes(router)
+
+    // Checkout Routes
+    checkoutRoutes(router)
 }    
