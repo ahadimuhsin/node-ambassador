@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { getRepository } from "typeorm";
 import { User } from "../entity/user.entity";
-import { Order } from "../entity/order.entity";
 import { client } from "..";
 
 export const Ambassadors = async (req: Request, res: Response) => {

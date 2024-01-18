@@ -4,6 +4,10 @@ import { Order } from "../entity/order.entity";
 import { Link } from "../entity/link.entity";
 import { Product } from "../entity/product.entity";
 import { OrderItem } from "../entity/order-item.entity";
+import Stripe from "stripe";
+import { client } from "..";
+import { User } from "../entity/user.entity";
+import { createTransport } from "nodemailer";
 
 export const Orders = async (req: Request, res: Response) => {
     
@@ -69,6 +73,7 @@ export const CreateOrder = async(req: Request, res: Response) =>
 
         order = await queryRunner.manager.save(order);
 
+        const line_items = [];
         for(let product of body.products)
         {
             const data = await getRepository(Product).findOne({
@@ -86,24 +91,104 @@ export const CreateOrder = async(req: Request, res: Response) =>
             orderItem.admin_revenue = (data.price * product.quantity) * 0.9 //90%
 
             await queryRunner.manager.save(orderItem)
+
+            line_items.push({
+                name: data.title,
+                description: data.description,
+                images: [data.image],
+                amount: 100 * data.price,
+                currency: 'usd',
+                quantity: product.quantity
+            });
         }
+
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+            apiVersion: '2020-08-27'
+        });
+
+        const source = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: line_items,
+            success_url: `${process.env.CHECKOUT_URL}/success?source={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.CHECKOUT_URL}/error`
+        });
+
+        order.transaction_id = source['id'];
+
+        await queryRunner.manager.save(order);
 
         //commit
         await queryRunner.commitTransaction();
 
         res.send({
             status: "Order created",
-            data: order
+            data: source
         })
     } catch (error) {
         //rollback
         await queryRunner.rollbackTransaction();
 
         return res.status(400).send({
-            message: "Error occured"
+            message: "Error occured",
+            error: error.message
+        })
+    }    
+}
+
+export const ConfirmOrder = async (req: Request, res: Response) => {
+    const repository = getRepository(Order);
+
+    const order = await repository.findOne({
+        where: {
+            transaction_id: req.body.source
+        },
+        relations: ['order_items']
+    });
+
+    if(!order)
+    {
+        return res.status(404).send({
+            message: "Order Not Found",
         })
     }
-    
 
-    
+    //update status order
+    await repository.update(order.id, {
+        complete: true
+    });
+
+    const user = await getRepository(User).findOne({
+        where: {
+            id: order.user_id
+        }
+    })
+
+    //update ranking in redis
+    await client.zIncrBy('rankings', order.ambassador_revenue, user.fullName);
+
+    // send email to admin and ambassador
+    const transporter = createTransport({
+        host: 'host.docker.internal',
+        port: 1025
+    });
+
+    await transporter.sendMail({
+        from: 'no-reply@system.com',
+        to: 'admin@mail.com',
+        subject: "Order has been completed",
+        html: `Order#${order.id} with a total of $${order.total} has been completed`
+    });
+
+    await transporter.sendMail({
+        from: 'no-reply@system.com',
+        to: order.ambassador_email,
+        subject: "Order has been completed",
+        html: `You earned $${order.ambassador_revenue} from the link #${order.code}`
+    });
+
+    await transporter.close();
+
+    res.send({
+        message: "success"
+    })
 }
